@@ -15,17 +15,23 @@ app.get('/login', (req, res) => {
   res.send('anatoliy409453');
 });
 
-app.post('/zipper', upload.any(), (req, res) => {
-  res.json({
-    body: req.body,
-    files: req.files ? req.files.map(f => ({
-      fieldname: f.fieldname,
-      originalname: f.originalname,
-      size: f.size
-    })) : []
+app.post('/zipper', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No file');
+  }
+
+  gzip(req.file.buffer, (err, data) => {
+    if (err) {
+      return res.status(500).send('Compression error');
+    }
+
+    res.set('Content-Type', 'application/gzip');
+    res.send(data);
   });
 });
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log(`Server started on port ${PORT}`);
+});
