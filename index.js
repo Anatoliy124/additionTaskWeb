@@ -1,45 +1,25 @@
 import express from 'express';
+import multer from 'multer';
 import { gzip } from 'zlib';
 
 const app = express();
+const upload = multer({ storage: multer.memoryStorage() });
 
-app.use((req, res, next) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  next();
-});
+app.post('/zipper', upload.single('file'), (req, res) => {
+  if (!req.file || !Buffer.isBuffer(req.file.buffer)) {
+    return res.status(400).send('No file');
+  }
 
-app.get('/login', (req, res) => {
-  res.type('text/plain; charset=UTF-8');
-  res.send('anatoliy409453');
-});
+  gzip(req.file.buffer, (err, data) => {
+    if (err) return res.status(500).send('Compression error');
 
-// ВРЕМЕННЫЙ диагностический режим — без multer, просто смотрим что реально приходит
-app.post('/zipper', (req, res) => {
-  const chunks = [];
+    res.setHeader('Content-Type', 'application/gzip');
+    res.setHeader('Content-Length', data.length);
+    res.setHeader('Access-Control-Allow-Origin', '*');
 
-  req.on('data', (chunk) => chunks.push(chunk));
-
-  req.on('end', () => {
-    const raw = Buffer.concat(chunks);
-
-    console.log('--- RAW /zipper body ---');
-    console.log('Content-Type:', req.headers['content-type']);
-    console.log('Content-Length header:', req.headers['content-length']);
-    console.log('Actual bytes received:', raw.length);
-    console.log('Raw body (как текст):');
-    console.log(JSON.stringify(raw.toString('utf8')));
-
-    res.status(400).send('Debug mode - see server logs');
-  });
-
-  req.on('error', (err) => {
-    console.log('Stream error:', err.message);
-    res.status(500).send('Stream error');
+    // ВАЖНО: только raw stream
+    return res.end(data);
   });
 });
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
-});
+app.listen(process.env.PORT || 3000);
