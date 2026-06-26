@@ -15,16 +15,17 @@ app.get('/login', (req, res) => {
   res.send('anatoliy409453');
 });
 
-app.post('/zipper', upload.single('file'), (req, res) => {
-  if (!req.file) {
+app.post('/zipper', upload.any(), (req, res) => {
+  const file = (req.files && req.files[0]) || req.file;
+
+  if (!file || !file.buffer) {
     return res.status(400).send('No file');
   }
 
-  gzip(req.file.buffer, (err, data) => {
+  gzip(file.buffer, (err, data) => {
     if (err) {
       return res.status(500).send('Compression error');
     }
-
     res.set('Content-Type', 'application/gzip');
     res.send(data);
   });
