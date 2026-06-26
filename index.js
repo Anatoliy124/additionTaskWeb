@@ -15,14 +15,32 @@ app.get('/login', (req, res) => {
   res.send('anatoliy409453');
 });
 
-// upload.any() — принимает файл независимо от названия поля формы
-app.post('/zipper', upload.any(), (req, res) => {
+function readRawBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
+app.post('/zipper', upload.any(), async (req, res) => {
   let buffer;
 
   if (req.files && req.files.length > 0) {
+    // Файл пришёл как multipart/form-data
     buffer = req.files[0].buffer;
   } else if (req.file && req.file.buffer) {
     buffer = req.file.buffer;
+  } else {
+    // multer ничего не нашёл — значит тело не multipart,
+    // читаем его как есть (сырые байты файла)
+    try {
+      const raw = await readRawBody(req);
+      if (raw.length > 0) buffer = raw;
+    } catch (e) {
+      // игнорируем, buffer останется undefined
+    }
   }
 
   if (!buffer) {
