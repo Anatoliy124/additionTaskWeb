@@ -15,14 +15,20 @@ app.get('/login', (req, res) => {
   res.send('anatoliy409453');
 });
 
-app.post('/zipper', upload.any(), (req, res) => {
-  const file = (req.files && req.files[0]) || req.file;
+app.post('/zipper', upload.single('file'), (req, res) => {
+  console.log('--- /zipper request ---');
+  console.log('Content-Type:', req.headers['content-type']);
+  console.log('Content-Length:', req.headers['content-length']);
+  console.log('req.file:', req.file
+    ? { fieldname: req.file.fieldname, originalname: req.file.originalname, size: req.file.size }
+    : null);
+  console.log('req.body:', req.body);
 
-  if (!file || !file.buffer) {
+  if (!req.file) {
     return res.status(400).send('No file');
   }
 
-  gzip(file.buffer, (err, data) => {
+  gzip(req.file.buffer, (err, data) => {
     if (err) {
       return res.status(500).send('Compression error');
     }
