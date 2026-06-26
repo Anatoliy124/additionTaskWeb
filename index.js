@@ -16,19 +16,13 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/zipper', upload.any(), (req, res) => {
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).send('No file');
-  }
-
-  const file = req.files[0];
-
-  gzip(file.buffer, (err, data) => {
-    if (err) {
-      return res.status(500).send('Compression error');
-    }
-
-    res.type('application/gzip');
-    res.send(data);
+  res.json({
+    body: req.body,
+    files: req.files ? req.files.map(f => ({
+      fieldname: f.fieldname,
+      originalname: f.originalname,
+      size: f.size
+    })) : []
   });
 });
 
