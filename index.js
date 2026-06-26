@@ -15,48 +15,18 @@ app.get('/login', (req, res) => {
   res.send('anatoliy409453');
 });
 
-function readRawBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on('data', (chunk) => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks)));
-    req.on('error', reject);
-  });
-}
-
-app.post('/zipper', upload.any(), async (req, res) => {
-  let buffer;
-
-  if (req.files && req.files.length > 0) {
-    // Файл пришёл как multipart/form-data
-    buffer = req.files[0].buffer;
-  } else if (req.file && req.file.buffer) {
-    buffer = req.file.buffer;
-  } else {
-    // multer ничего не нашёл — значит тело не multipart,
-    // читаем его как есть (сырые байты файла)
-    try {
-      const raw = await readRawBody(req);
-      if (raw.length > 0) buffer = raw;
-    } catch (e) {
-      // игнорируем, buffer останется undefined
-    }
-  }
-
-  if (!buffer) {
+app.post('/zipper', upload.single('file'), (req, res) => {
+  if (!req.file) {
     return res.status(400).send('No file');
   }
 
-  gzip(buffer, (err, data) => {
-    if (err) return res.status(500).send('Compression error');
+  gzip(req.file.buffer, (err, data) => {
+    if (err) {
+      return res.status(500).send('Compression error');
+    }
 
-    res.writeHead(200, {
-      'Content-Type': 'application/gzip',
-      'Content-Disposition': 'attachment; filename="result.gz"',
-      'Content-Length': data.length
-    });
-
-    res.end(data);
+    res.set('Content-Type', 'application/gzip');
+    res.send(data);
   });
 });
 
