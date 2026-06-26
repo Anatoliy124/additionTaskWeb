@@ -15,56 +15,21 @@ app.get('/login', (req, res) => {
   res.send('anatoliy409453');
 });
 
-function readRawBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on('data', (chunk) => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks)));
-    req.on('error', reject);
-  });
-}
+app.post('/zipper', upload.any(), (req, res) => {
+  const file = (req.files && req.files[0]) || req.file;
 
-app.post(
-  '/zipper',
-  (req, res, next) => {
-    const contentType = req.headers['content-type'] || '';
-    if (contentType.startsWith('multipart/form-data')) {
-      // Это форма с файлом — отдаём multer'у, он умеет это разбирать
-      return upload.any()(req, res, next);
-    }
-    // Не multipart — поток ещё не трогали, безопасно читаем дальше сами
-    next();
-  },
-  async (req, res) => {
-    let buffer;
-
-    if (req.files && req.files.length > 0) {
-      buffer = req.files[0].buffer;
-    } else if (req.file && req.file.buffer) {
-      buffer = req.file.buffer;
-    } else {
-      try {
-        buffer = await readRawBody(req);
-      } catch (e) {
-        buffer = null;
-      }
-    }
-
-    console.log('Content-Type:', req.headers['content-type'], '| buffer length:', buffer ? buffer.length : 0);
-
-    if (!buffer || buffer.length === 0) {
-      return res.status(400).send('No file');
-    }
-
-    gzip(buffer, (err, data) => {
-      if (err) {
-        return res.status(500).send('Compression error');
-      }
-      res.set('Content-Type', 'application/gzip');
-      res.send(data);
-    });
+  if (!file || !file.buffer) {
+    return res.status(400).send('No file');
   }
-);
+
+  gzip(file.buffer, (err, data) => {
+    if (err) {
+      return res.status(500).send('Compression error');
+    }
+    res.set('Content-Type', 'application/gzip');
+    res.send(data);
+  });
+});
 
 const PORT = process.env.PORT || 3000;
 
