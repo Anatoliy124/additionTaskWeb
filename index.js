@@ -15,15 +15,14 @@ app.get('/login', (req, res) => {
   res.send('anatoliy409453');
 });
 
-app.post('/zipper', (req, res) => {
+// upload.any() — принимает файл независимо от названия поля формы
+app.post('/zipper', upload.any(), (req, res) => {
   let buffer;
 
-  if (req.file && req.file.buffer) {
-    buffer = req.file.buffer;
-  } else if (req.files && req.files[0]) {
+  if (req.files && req.files.length > 0) {
     buffer = req.files[0].buffer;
-  } else if (req.body && Buffer.isBuffer(req.body)) {
-    buffer = req.body;
+  } else if (req.file && req.file.buffer) {
+    buffer = req.file.buffer;
   }
 
   if (!buffer) {
@@ -35,6 +34,7 @@ app.post('/zipper', (req, res) => {
 
     res.writeHead(200, {
       'Content-Type': 'application/gzip',
+      'Content-Disposition': 'attachment; filename="result.gz"',
       'Content-Length': data.length
     });
 
